@@ -1,7 +1,6 @@
 #include "client_info.h"
 
 client_info::~client_info() {
-
 }
 
 client_info::client_info() {

@@ -6,6 +6,13 @@ Mainwindow::Mainwindow(QWidget *parent) :
     ui(new Ui::Mainwindow)
 {
     ui->setupUi(this);
+    ui->lineEdit->hide();
+    ui->lineEdit_2->hide();
+    ui->pushButton->hide();
+    ui->pushButton_2->hide();
+    ui->spinBox->hide();
+    ui->textEdit->hide();
+    ui->spinBox_2->setEnabled(false);
     connect(tcpSocket,&QTcpSocket::connected,this,&Mainwindow::connecttoserver);
     connect(tcpSocket,&QTcpSocket::disconnected,this,&Mainwindow::disconnectedfroms);
     connect(tcpSocket,&QTcpSocket::readyRead,this,&Mainwindow::display);
@@ -23,12 +30,25 @@ void Mainwindow::on_pushButton_pressed()
 
 void Mainwindow::connecttoserver()
 {
-    //ui->textEdit->append("Connected");
-
+    ui->lineEdit->show();
+    ui->lineEdit_2->show();
+    ui->pushButton->show();
+    ui->pushButton_2->show();
+    ui->spinBox->show();
+    ui->textEdit->show();
+    ui->comboBox->hide();
+    ui->spinBox_2->hide();
+    ui->pushButton_3->hide();
+    ui->lineEdit_3->hide();
+    ui->checkBox->hide();
+    ui->label->hide();
+    QByteArray msg ="/nick " + ui->lineEdit_3->text().toUtf8();
+    tcpSocket->write(msg);
 }
 void Mainwindow::disconnectedfroms()
 {
     ui->textEdit->append("Disconnected");
+    tcpSocket->close();
 }
 void Mainwindow::readingdata()
 {
@@ -61,4 +81,17 @@ void Mainwindow::on_pushButton_2_clicked()
         tcpSocket->write(msg);
         ui->lineEdit_2->clear();
     }
+}
+
+void Mainwindow::on_pushButton_3_clicked()
+{
+    QString info = ui->comboBox->currentText();
+
+
+    tcpSocket->connectToHost(info,ui->spinBox_2->value());
+}
+
+void Mainwindow::on_checkBox_toggled(bool checked)
+{
+    ui->spinBox_2->setEnabled(not(checked));
 }

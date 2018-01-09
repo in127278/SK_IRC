@@ -1050,7 +1050,59 @@ mainwindow.o: ../clientQT/mainwindow.cpp ../clientQT/mainwindow.h \
 		/opt/Qt/5.10.0/gcc_64/include/QtNetwork/qtnetworkglobal.h \
 		/opt/Qt/5.10.0/gcc_64/include/QtNetwork/qtnetwork-config.h \
 		/opt/Qt/5.10.0/gcc_64/include/QtNetwork/qabstractsocket.h \
-		ui_mainwindow.h
+		ui_mainwindow.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtCore/QVariant \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/QAction \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/qaction.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/qactiongroup.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/QApplication \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/qapplication.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtCore/qcoreapplication.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtCore/qeventloop.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/qdesktopwidget.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtGui/qguiapplication.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtGui/qinputmethod.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/QButtonGroup \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/qbuttongroup.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/QHeaderView \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/qheaderview.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/qabstractitemview.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/qabstractscrollarea.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/qframe.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtCore/qabstractitemmodel.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtCore/qitemselectionmodel.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/qabstractitemdelegate.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/qstyleoption.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/qabstractspinbox.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtGui/qvalidator.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtCore/qregularexpression.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/qslider.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/qabstractslider.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/qstyle.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/qtabbar.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/qrubberband.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/QLineEdit \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/qlineedit.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtGui/qtextcursor.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtGui/qtextformat.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtGui/qpen.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtGui/qtextoption.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/QMenuBar \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/qmenubar.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/qmenu.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/QPushButton \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/qpushbutton.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/qabstractbutton.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/QSpinBox \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/qspinbox.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/QStatusBar \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/qstatusbar.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/QTextEdit \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/qtextedit.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtGui/qtextdocument.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/QToolBar \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/qtoolbar.h \
+		/opt/Qt/5.10.0/gcc_64/include/QtWidgets/QWidget
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o mainwindow.o ../clientQT/mainwindow.cpp
 
 moc_mainwindow.o: moc_mainwindow.cpp 
