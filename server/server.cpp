@@ -1,4 +1,4 @@
-#include "server.h"
+#include "command_parser.cpp"
 
 
 int main(int argc, char ** argv){
@@ -67,9 +67,8 @@ void *waiting_for_connection(void *arguments){
         args->FdList[index].fd=clientFd;
         memset(&args->clientList[index].nick[0], 0, sizeof(&args->clientList[index].nick));
         memset(&args->clientList[index].msg[0], 0, sizeof(&args->clientList[index].nick));
-        printf("index: %d client %d fd %d\n",index,args->FdList[index].fd,args->clientList[index].clientFd=clientFd);
+        //printf("index: %d client %d fd %d\n",index,args->FdList[index].fd,args->clientList[index].clientFd=clientFd);
         args->FdList[index].events=POLLIN;
-        //memset(&powitanie[0], 0, sizeof(&powitanie));
         write(args->clientList[index].clientFd,"Connection established",sizeof("Connection established"));
 
       }
@@ -86,15 +85,6 @@ void *poll_listener(void * arguments){
   }
 }
 
-void sendtolocal(server* server_data,client_info* sender,int count){
-  for(int i=0;i<10;i++){
-    if(server_data->clientList[i].channel == sender->channel){
-
-      write(server_data->clientList[i].clientFd,sender->msg,count);
-      printf("Sending buf to %d from %d \n",server_data->clientList[i].clientFd,sender->clientFd);
-    }
-  }
-}
 
 void *basic_msghandler(void *arguments){
   struct server *args = (struct server *)arguments;
@@ -115,7 +105,6 @@ void start_reading(server* arg,client_info* client){
 	data1 = new data_s;
 	data1->pointer=arg;
 	data1->client=client;
-	printf("wolwow %d \n",data1->client->id);
 	pthread_t thread1;
 	pthread_create(&thread1, NULL, read_listener, (void *) data1);
 }
@@ -123,14 +112,14 @@ void start_reading(server* arg,client_info* client){
 void *read_listener(void *arguments){
 	//pthread_detach(pthread_self());
   struct data_s *args = (class data_s *)arguments;
+	std::vector<std::string> vec;
   while(1){
     int count=read(args->client->clientFd,args->client->msg,100);
 
     if(count>0){
-        if(args->client->msg=="/channel"){
-        }
-
-        sendtolocal(args->pointer,args->client,count);
+				split(args->client->msg,vec);
+				parse_command(args,vec,count);
+				vec.clear();
     }
 
     if(count==0){
@@ -140,7 +129,6 @@ void *read_listener(void *arguments){
         close(args->pointer->clientList[index].clientFd);
 				args->pointer->clientList[index].reset();
 				args->pointer->running[index]=0;
-				printf("asd %d\n",index);
 
 				//TODO MUTEX
 

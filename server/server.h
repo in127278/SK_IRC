@@ -16,7 +16,9 @@
 #include <string.h>
 #include <poll.h>
 #include <pthread.h>
+
 #include "client_info.cpp"
+#include "parser.cpp"
 
 struct server {
   int servFd;
@@ -32,7 +34,6 @@ struct data_s {
 uint16_t readPort(char * txt);
 void start_server(int port);
 int index_check(server*s);
-void sendtolocal(server* server_data,client_info* sender,int count);
 void *poll_listener(void * arguments);
 void *waiting_for_connection(void *arguments);
 void start_reading(server* arg,client_info* client);

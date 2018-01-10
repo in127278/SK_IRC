@@ -10,7 +10,7 @@ public:
     int id;
     int channel;
     char  msg[100];
-    char nick[100];
+    char nick[50];
     struct sockaddr_in *IPv4Data;
     void reset();
 };
