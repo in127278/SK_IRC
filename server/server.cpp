@@ -106,7 +106,7 @@ void ctrl_c(int){
 */
 int index_check(server* s){
   for (int i=0;i<10;i++){
-		printf("%d %d\n",i,s->clientList[i].clientFd);
+		//printf("%d %d\n",i,s->clientList[i].clientFd);
     if(s->clientList[i].clientFd == -1){
         return i;
     }
