@@ -1,6 +1,6 @@
 #include "command_parser.h"
 
-void parse_command(data_s* args, std::vector<std::string> vec,int count){
+void parse_command(data_s* args, std::vector<std::string> &vec,int count){
   if(strcmp(vec[0].c_str(),"/nick" ) == 0){
       if(vec.size()<2){
         write(args->client->clientFd,"Not enough arguments",sizeof("Not enough arguments"));
@@ -19,6 +19,20 @@ void parse_command(data_s* args, std::vector<std::string> vec,int count){
         strcat(str,vec[1].c_str());
         sendtolocal(args->pointer,args->client,str,sizeof(str));
         strcpy(args->client->nick,vec[1].c_str());
+      }
+    }
+    else if(strcmp(vec[0].c_str(),"/join" ) == 0){
+      if(vec.size()<2){
+        write(args->client->clientFd,"Not enough arguments",sizeof("Not enough arguments"));
+      }
+      else{
+        char str[100]="";
+        strcat(str,"Leaving channel: ");
+        strcat(str,std::to_string(args->client->channel).c_str());
+        strcat(str," And connecting to channel: ");
+        strcat(str,vec[1].c_str());
+        write(args->client->clientFd,str,sizeof(str));
+        args->client->channel=atoi(vec[1].c_str());
       }
     }
   else{

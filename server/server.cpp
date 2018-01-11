@@ -19,17 +19,6 @@ int main(int argc, char ** argv){
 
 }
 
-
-int index_check(server* s){
-  for (int i=0;i<10;i++){
-		printf("%d %d\n",i,s->clientList[i].clientFd);
-    if(s->clientList[i].clientFd == -1){
-        return i;
-    }
-  }
-return -1;
-}
-
 void start_server(int port){
 	server* serv;
 	serv = new server;
@@ -43,10 +32,8 @@ void start_server(int port){
 	// enter listening mode
 	res = listen(serv->servFd, 1);
 	if(res) error(1, errno, "listen failed");
-	pthread_t thread1,thread2,thread3;
+	pthread_t thread1;
 	pthread_create(&thread1, NULL, waiting_for_connection, (void *) serv);
-  pthread_create(&thread2, NULL, basic_msghandler, (void *) serv);
-  pthread_create(&thread3, NULL, poll_listener, (void *) serv);
 }
 
 void *waiting_for_connection(void *arguments){
@@ -64,49 +51,22 @@ void *waiting_for_connection(void *arguments){
         args->clientList[index].id=index;
         args->clientList[index].channel=0;
         args->clientList[index].servFd=args->servFd;
-        args->FdList[index].fd=clientFd;
         memset(&args->clientList[index].nick[0], 0, sizeof(&args->clientList[index].nick));
-        memset(&args->clientList[index].msg[0], 0, sizeof(&args->clientList[index].nick));
-        //printf("index: %d client %d fd %d\n",index,args->FdList[index].fd,args->clientList[index].clientFd=clientFd);
-        args->FdList[index].events=POLLIN;
+        memset(&args->clientList[index].msg[0], 0, sizeof(&args->clientList[index].msg));
+
         write(args->clientList[index].clientFd,"Connection established",sizeof("Connection established"));
 
       }
       // TODO server full
       //TODO MUTEX UNLOCK TU
       // connected:
+			pthread_t thread1;
+			data_s *data1;
+			data1 = new data_s;
+			data1->pointer=args;
+			data1->client=&args->clientList[index];
+			pthread_create(&thread1, NULL, read_listener, (void *) data1);
     }
-}
-
-void *poll_listener(void * arguments){
-  struct server *args = (struct server *)arguments;
-  while(1){
-    poll(args->FdList,10,100);
-  }
-}
-
-
-void *basic_msghandler(void *arguments){
-  struct server *args = (struct server *)arguments;
-  while(1){
-      for(int i=0;i<10;i++){
-
-        if(args->FdList[i].revents==POLLIN && args->clientList[i].clientFd!=-1){
-          if(args->running[i]==0){
-            args->running[i]=1;
-            start_reading(args,&args->clientList[i]);
-          }
-        }
-      }
-  }
-}
-void start_reading(server* arg,client_info* client){
-	data_s *data1;
-	data1 = new data_s;
-	data1->pointer=arg;
-	data1->client=client;
-	pthread_t thread1;
-	pthread_create(&thread1, NULL, read_listener, (void *) data1);
 }
 
 void *read_listener(void *arguments){
@@ -123,19 +83,18 @@ void *read_listener(void *arguments){
     }
 
     if(count==0){
-        printf("Closing: %d %d \n",args->client->id,count);
+        //printf("Closing: %d %d \n",args->client->id,count);
 				//TODO MUTEX
 				int index = args->client->id;
         close(args->pointer->clientList[index].clientFd);
 				args->pointer->clientList[index].reset();
-				args->pointer->running[index]=0;
 
 				//TODO MUTEX
 
         pthread_exit((void *) -1);
 
     }
-    memset(&args->client->msg[0], 0, sizeof(&args->client->msg));
+    memset(&args->client->msg[0], 0, count);
   }
 }
 /*
@@ -145,6 +104,15 @@ void ctrl_c(int){
 	exit(0);
 }
 */
+int index_check(server* s){
+  for (int i=0;i<10;i++){
+		printf("%d %d\n",i,s->clientList[i].clientFd);
+    if(s->clientList[i].clientFd == -1){
+        return i;
+    }
+  }
+return -1;
+}
 uint16_t readPort(char * txt){
 	char * ptr;
 	auto port = strtol(txt, &ptr, 10);
