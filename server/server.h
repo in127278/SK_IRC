@@ -19,9 +19,13 @@
 #include "parser.cpp"
 #include "client_info.cpp"
 
+struct otherserver{
+  int fd;
+  client_info other[10];
+};
+
 struct server {
   int servFd;
-  int otherservFd[2];
   int receivesocket;
   client_info clientList[10];
   std::vector <int> otherserv;

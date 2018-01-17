@@ -55,18 +55,23 @@ void sendtolocal(server* server_data,int channel,char buf[],int msgcount){
   }
 }
 void sendtoother(server* server_data,client_info* sender,char buf[],int msgcount){
-  int antidup=-55;
-  //TODO FIND SOLUTION TO AVOID SENDING MSGS TO THE SAME SERVER
-  for(int i=0;i<30;i++){
-    if(server_data->other[i].channel == sender->channel and antidup !=server_data->other[i].clientFd){
+  if(server_data->otherserv.size()>0){
+    unsigned iter=0;
+    while(iter < server_data->otherserv.size()){
+      for(int i=0;i<30;i++){
+        if(server_data->other[i].clientFd == server_data->otherserv[iter] and server_data->other[i].channel == sender->channel){
+          break;
+        }
+      }
       char bufe[200]="";
-  		strcat(bufe,"msg ");
+      strcat(bufe,"msg ");
       strcat(bufe,std::to_string(sender->channel).c_str());
       strcat(bufe," ");
-  		strcat(bufe,buf);
-  		write(server_data->other[i].clientFd, bufe, sizeof(bufe));
-      printf("Sending buf to other %d from %d \n",server_data->other[i].clientFd,sender->clientFd);
-      lol=server_data->other[i].clientFd;
+      strcat(bufe,buf);
+      write(server_data->otherserv[iter], bufe, sizeof(bufe));
+      printf("Sending buf to other %d from %d \n",server_data->otherserv[iter],sender->clientFd);
+
+      iter++;
     }
   }
 }
