@@ -24,7 +24,7 @@ Mainwindow::~Mainwindow()
 }
 
 void Mainwindow::on_pushButton_pressed()
-{
+{   tcpSocket->disconnectFromHost();
     tcpSocket->connectToHost(ui->lineEdit->text(),ui->spinBox->value());
 }
 
@@ -48,6 +48,7 @@ void Mainwindow::connecttoserver()
 void Mainwindow::disconnectedfroms()
 {
     ui->textEdit->append("Disconnected");
+    tcpSocket->disconnectFromHost();
     tcpSocket->close();
 }
 void Mainwindow::readingdata()

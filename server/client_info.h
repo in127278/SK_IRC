@@ -5,13 +5,11 @@ class client_info {
 public:
     client_info();
     ~client_info();
-    int servFd;
     int clientFd;
     int id;
     int channel;
     char  msg[100];
     char nick[50];
-    struct sockaddr_in *IPv4Data;
     void reset();
 };
 

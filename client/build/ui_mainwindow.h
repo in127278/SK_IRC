@@ -99,6 +99,8 @@ public:
         comboBox = new QComboBox(centralWidget);
         comboBox->addItem(QString());
         comboBox->addItem(QString());
+        comboBox->addItem(QString());
+        comboBox->addItem(QString());
         comboBox->setObjectName(QStringLiteral("comboBox"));
         comboBox->setGeometry(QRect(60, 50, 141, 21));
         comboBox->setEditable(true);
@@ -129,7 +131,9 @@ public:
         label->setText(QApplication::translate("Mainwindow", "Nick:", nullptr));
         checkBox->setText(QApplication::translate("Mainwindow", "use default port", nullptr));
         comboBox->setItemText(0, QApplication::translate("Mainwindow", "localhost", nullptr));
-        comboBox->setItemText(1, QApplication::translate("Mainwindow", "127.0.0.1", nullptr));
+        comboBox->setItemText(1, QApplication::translate("Mainwindow", "192.168.0.12", nullptr));
+        comboBox->setItemText(2, QApplication::translate("Mainwindow", "192.168.2.12", nullptr));
+        comboBox->setItemText(3, QApplication::translate("Mainwindow", "127.0.0.1", nullptr));
 
     } // retranslateUi
 
