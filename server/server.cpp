@@ -1,31 +1,30 @@
 #include "command_parser.cpp"
 
-
 int main(int argc, char ** argv){
 	// get and validate port number
 	//if(argc != 2) error(1, 0, "Need 1 arg (port)");
 	char *address = argv[1];
 	auto port = readPort(argv[2]);
+
 	if(argc == 4) {
-	char *source = argv[3];
-	start_server(address,port,source);
+		char *server_to_ping = argv[3];
+		start_server(address,port,server_to_ping);
 	}
 	else{
 		start_server(address,port,NULL);
 	}
-	//initialize(args.servFd,port);
 	// prevent dead sockets from throwing pipe errors on write
 	signal(SIGPIPE, SIG_IGN);
   //signal(SIGINT, ctrl_c);
 /****************************/
 
 	while(true){
-    // tutaj komunikacja między serwerami!
+
   }
 
 }
 
-void start_server(char *address,int port,char *source){
+void start_server(char *address,int port,char *server_to_ping){
 
 	server* serv;
 	serv = new server;
@@ -39,101 +38,127 @@ void start_server(char *address,int port,char *source){
 
 	int res = bind(serv->servFd, (sockaddr*) &serverAddr, sizeof(serverAddr));
 	if(res) error(1, errno, "bind failed");
-	// enter listening mode
+
 	res = listen(serv->servFd, 1);
 	if(res) error(1, errno, "listen failed");
 
 	pthread_t thread1,thread2;
 	pthread_create(&thread1, NULL, waiting_for_connection, (void *) serv);
-	if(source!=NULL){
-		serv->addr=source;
+
+	if(server_to_ping!=NULL){
+		serv->addr=server_to_ping;
 		pthread_create(&thread2, NULL, ping_other, (void *) serv);
 	}
 }
 
 void *ping_other(void *arguments){
 
-	struct server *args = (struct server *)arguments;
+	struct server *serv = (struct server *)arguments;
 
 	adres* adr;
 	adr = new adres;
-	prepareforping(adr,args);
+	prepareforping(adr,serv);
 
 	while(1){
-		if(adr->connected==0){
-			int connected=connect(args->receivesocket, adr->resolved->ai_addr, adr->resolved->ai_addrlen);
+		adr->connected=connect(serv->receivesocket, adr->resolved->ai_addr, adr->resolved->ai_addrlen);
+		//sometimes first two clients are missing without sleep(1)
+		sleep(1);
+		if(adr->connected == 0){
+			//printf("Connected %d\n",args->receivesocket);
 
-			if(connected == 0){
-					adr->connected=1;
-					printf("Connected %d\n",args->receivesocket);
-						//MUTEX
-					write(args->receivesocket, "serwer", sizeof("serwer"));
+			write(serv->receivesocket, "serwer", sizeof("serwer"));
 
-					sdata *serverData;
-					serverData = new sdata;
-					serverData->pointer=args;
-					serverData->whatsocket=args->receivesocket;
+			sdata *serverData;
+			serverData = new sdata;
+			serverData->pointer=serv;
+			serverData->whatsocket=serv->receivesocket;
+			serv->otherserv.push_back(serv->receivesocket);
 
-					pthread_t thread1;
-					pthread_create(&thread1, NULL, init_send, (void *) serverData);
+			//Sending connected client structures to the other server
+			pthread_t thread1;
+			pthread_create(&thread1, NULL, initialize_send, (void *) serverData);
 
-					std::vector<std::string> vec;
-					args->otherserv.push_back(args->receivesocket);
-
-					while(1){
-							int count = readingfrombuffer(serverData,vec);
-
-						if(count==0){
-							adr->connected=0;
-							args->otherserv.erase( std::remove( args->otherserv.begin(), args->otherserv.end(), args->receivesocket), args->otherserv.end());
-							close(args->receivesocket);
-							prepareforping(adr,args);
-							connected=-1;
-							break;
-						}
-					}
+			std::vector<std::string> vec;
+			//Read data from the pinged server until dc
+			while(1){
+				//int count = read_from_server(serverData,vec);
+				if(read_from_server(serverData,vec) == 0){
+					serv->otherserv.erase( std::remove( serv->otherserv.begin(), serv->otherserv.end(), serv->receivesocket), serv->otherserv.end());
+					remove_clients_from_server(serverData,serv->receivesocket);
+					close(serv->receivesocket);
+					prepareforping(adr,serv);
+					adr->connected=-1;
+					break;
+				}
 			}
 		}
 	}
 }
-int readingfrombuffer(sdata* serverData,std::vector<std::string> &vec){
+
+int read_from_server(sdata* serverData,std::vector<std::string> &vec){
 	char buf[200]="";
 	int count=read(serverData->whatsocket, buf, 200);
+	printf("Przyszło z bufera: %s \n",buf);
 	if(count>0){
 		split(buf,vec);
-		parse_server_command(serverData,vec);
-		printf("Przyszło z bufera: %s\n",buf);
-		memset(&buf[0], 0, count);
+		parse_server_command(serverData,vec,buf);/*
+		if(strcmp(vec[0].c_str(),"add" ) == 0){
+			if(serverData->pointer->otherserv.size()>1){
+				unsigned iter=0;
+				while(iter < serverData->pointer->otherserv.size()){
+					if(serverData->whatsocket != serverData->pointer->otherserv[iter]){
+							write(serverData->pointer->otherserv[iter],buf,200);
+							}
+					iter++;
+				}
+			}
+		} */
 		vec.clear();
 	}
+	memset(&buf[0], 0, count);
 	return count;
 }
 
-void* init_send(void *arguments){
-	struct sdata *args = (struct sdata *)arguments;
+void* initialize_send(void *arguments){
+	struct sdata *serverData = (struct sdata *)arguments;
 	int iterator=0;
-	while(args->pointer->clientList[iterator].id!=-1){
-		AddClient(args->whatsocket, &args->pointer->clientList[iterator]);
+	while(serverData->pointer->clientList[iterator].id!=-1){
+		if(serverData->pointer->clientList[iterator].id!=-2){
+			add_client(serverData->whatsocket, &serverData->pointer->clientList[iterator]);
+		}
 		iterator+=1;
+	}
+	if(serverData->pointer->otherserv.size()>1){
+		unsigned iter=0;
+		while(iter < serverData->pointer->otherserv.size()){
+			if(serverData->whatsocket != serverData->pointer->otherserv[iter]){
+				for(int i=0;i<30;i++){
+					if(serverData->pointer->otherserv[iter] == serverData->pointer->other[i].clientFd){
+						add_client(serverData->whatsocket,&serverData->pointer->other[i]);
+					}
+				}
+			}
+			iter++;
+		}
 	}
 	pthread_exit((void *) -1);
 }
 
 void *waiting_for_connection(void *arguments){
-  struct server *args = (struct server *)arguments;
+  struct server *serv = (struct server *)arguments;
   while(1){
       sockaddr_in clientAddr{0};
     	socklen_t clientAddrSize = sizeof(clientAddr);
-    	auto clientFd = accept(args->servFd, (sockaddr*) &clientAddr, &clientAddrSize);
+    	auto clientFd = accept(serv->servFd, (sockaddr*) &clientAddr, &clientAddrSize);
     	if(clientFd == -1) error(1, errno, "accept failed");
 
 			// TODO MUTEX LOCK TUTAJ
-      int index = index_check(args);
+      int index = index_check(serv);
 			if (index != -1){
-			args->clientList[index].clientFd=clientFd;
-			args->clientList[index].id=index;
-			char *bufer=inet_ntoa(clientAddr.sin_addr);
-			printf("Connected from: %s\n",bufer);
+				serv->clientList[index].clientFd=clientFd;
+				serv->clientList[index].id=index;
+				char *bufer=inet_ntoa(clientAddr.sin_addr);
+				printf("Connected from: %s\n",bufer);
 			}
 			//write(args->clientList[index].clientFd,"Connection established",sizeof("Connection established"));
       // TODO server full
@@ -142,8 +167,8 @@ void *waiting_for_connection(void *arguments){
 			pthread_t thread1;
 			data_s *data1;
 			data1 = new data_s;
-			data1->pointer=args;
-			data1->client=&args->clientList[index];
+			data1->pointer=serv;
+			data1->client=&serv->clientList[index];
 			//TODO starting client or server here
 			pthread_create(&thread1, NULL, read_listener, (void *) data1);
     }
@@ -154,73 +179,89 @@ void *read_listener(void *arguments){
   struct data_s *args = (class data_s *)arguments;
 	std::vector<std::string> vec;
 	char buffer[100]="";
-	int user=0;
+
 	printf("ClientFd %d\n",args->client->clientFd);
-	int count=read(args->client->clientFd,buffer,100);
-	if(count>0){
-			split(buffer,vec);
-			user=initialize_client(args,vec,count);
-			vec.clear();
+	//int count=read(args->client->clientFd,buffer,100);
+	if (read(args->client->clientFd,buffer,100) > 0){
+
+		split(buffer,vec);
+		//user=initialize_client(args,vec,count);
+		//vec.clear();
+
+		if(initialize_client(args,vec) ==  0){
+
+			//Remove server from the local client list TODO MUTEX
+			int fd = args->client->clientFd;
+			int index = args->client->id;
+			args->pointer->clientList[index].reset();
+			printf("Other server found \n");
+			//Main loop (read) -> thread
+			sdata *serverData;
+			serverData = new sdata;
+			serverData->pointer=args->pointer;
+			serverData->whatsocket=fd;
+			args->pointer->otherserv.push_back(fd);
+
+			pthread_t thread1;
+			pthread_create(&thread1, NULL, initialize_send, (void *) serverData);
+
+			while(1){
+
+				 //int count=read_from_server(serverData,vec);
+				 if(read_from_server(serverData,vec) == 0){
+					 serverData->pointer->otherserv.erase( std::remove( serverData->pointer->otherserv.begin(), serverData->pointer->otherserv.end(), serverData->whatsocket), serverData->pointer->otherserv.end());
+					 remove_clients_from_server(serverData,serverData->whatsocket);
+					 close(serverData->whatsocket);
+
+					 pthread_exit((void *) -1);
+				 }
+
+			}
+
+
+			}
+
+		else{
+			//vec.clear();
+			if(args->pointer->otherserv.size()>0){
+				unsigned iter=0;
+				while(iter < args->pointer->otherserv.size()){
+					add_client(args->pointer->otherserv[iter],args->client);
+					iter++;
+					}
+				}
+	  while(1){
+	    int count=read(args->client->clientFd,args->client->msg,100);
+
+	    if(count>0){
+					split(args->client->msg,vec);
+					parse_command(args,vec,count);
+					vec.clear();
+	    }
+
+	    if(count==0){
+	        //printf("Closing: %d %d \n",args->client->id,count);
+					//TODO MUTEX
+					int index = args->client->id;
+	        close(args->pointer->clientList[index].clientFd);
+					args->pointer->clientList[index].reset();
+
+					//TODO MUTEX
+
+	        pthread_exit((void *) -1);
+
+	    	}
+	    memset(&args->client->msg[0], 0, count);
+	  }
+		}
 	}
-	if(user ==  0){
-		int fd = args->client->clientFd;
-		int index = args->client->id;
-		args->pointer->clientList[index].reset();
-		printf("Other server found \n");
-		//Main loop (read) -> thread
-		sdata *serverData;
-		serverData = new sdata;
-		serverData->pointer=args->pointer;
-		serverData->whatsocket=fd;
-		args->pointer->otherserv.push_back(fd);
-		pthread_t thread1;
-		pthread_create(&thread1, NULL, init_send, (void *) serverData);
-		while(1){
-
-			 int count=readingfrombuffer(serverData,vec);
-			 if(count==0){
-				 serverData->pointer->otherserv.erase( std::remove( serverData->pointer->otherserv.begin(), serverData->pointer->otherserv.end(), serverData->whatsocket), serverData->pointer->otherserv.end());
-				 close(serverData->whatsocket);
-				 pthread_exit((void *) -1);
-			 }
-
-		}
 
 
-		}
+	//TODO DELETE  ClientFd
 
-	else{
-		if(args->pointer->otherserv.size()>0){
-			unsigned iter=0;
-			while(iter < args->pointer->otherserv.size()){
-				AddClient(args->pointer->otherserv[iter],args->client);
-				iter++;
-		}
-		}
-  while(1){
-    int count=read(args->client->clientFd,args->client->msg,100);
+	pthread_exit((void *) -1);
 
-    if(count>0){
-				split(args->client->msg,vec);
-				parse_command(args,vec,count);
-				vec.clear();
-    }
 
-    if(count==0){
-        //printf("Closing: %d %d \n",args->client->id,count);
-				//TODO MUTEX
-				int index = args->client->id;
-        close(args->pointer->clientList[index].clientFd);
-				args->pointer->clientList[index].reset();
-
-				//TODO MUTEX
-
-        pthread_exit((void *) -1);
-
-    }
-    memset(&args->client->msg[0], 0, count);
-  }
-	}
 }
 /*
 void ctrl_c(int){
@@ -238,6 +279,8 @@ int index_check(server* s){
   }
 return -1;
 }
+
+
 
 uint16_t readPort(char * txt){
 	char * ptr;

@@ -18,11 +18,7 @@
 #include <algorithm>
 #include "parser.cpp"
 #include "client_info.cpp"
-
-struct otherserver{
-  int fd;
-  client_info other[10];
-};
+#include <unordered_set>
 
 struct server {
   int servFd;
@@ -44,18 +40,16 @@ struct data_s {
   server* pointer;
   client_info* client;
 };
-
 uint16_t readPort(char * txt);
 void start_server(char *address,int port,char *pinger);
 int index_check(server*s);
-int index_check2(server*s);
 void *waiting_for_connection(void *arguments);
 void *read_listener(void *arguments);
-void* init_send(void *arguments);
+void* initialize_send(void *arguments);
 void *server_loop(void *arguments);
 void *ping_other(void *arguments);
 void setReuseAddr(int sock);
 //void ctrl_c(int);
-int readingfrombuffer(sdata* dta1,std::vector<std::string> &vec);
+int read_from_server(sdata* data,std::vector<std::string> &vec);
 
 #endif //SERVER_H
