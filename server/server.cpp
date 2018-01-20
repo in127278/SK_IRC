@@ -1,4 +1,4 @@
-#include "command_parser.cpp"
+#include "parsers/command_parser.cpp"
 
 int main(int argc, char ** argv){
 	// get and validate port number
@@ -98,21 +98,11 @@ void *ping_other(void *arguments){
 int read_from_server(sdata* serverData,std::vector<std::string> &vec){
 	char buf[200]="";
 	int count=read(serverData->whatsocket, buf, 200);
-	printf("Przyszło z bufera: %s \n",buf);
+	printf("Data received: %s \n",buf);
 	if(count>0){
 		split(buf,vec);
-		parse_server_command(serverData,vec,buf);/*
-		if(strcmp(vec[0].c_str(),"add" ) == 0){
-			if(serverData->pointer->otherserv.size()>1){
-				unsigned iter=0;
-				while(iter < serverData->pointer->otherserv.size()){
-					if(serverData->whatsocket != serverData->pointer->otherserv[iter]){
-							write(serverData->pointer->otherserv[iter],buf,200);
-							}
-					iter++;
-				}
-			}
-		} */
+		parse_server_command(serverData,vec,buf);
+
 		vec.clear();
 	}
 	memset(&buf[0], 0, count);
@@ -188,6 +178,7 @@ void *read_listener(void *arguments){
 		//user=initialize_client(args,vec,count);
 		//vec.clear();
 
+		//Checking if connected user is a client or server
 		if(initialize_client(args,vec) ==  0){
 
 			//Remove server from the local client list TODO MUTEX
@@ -220,9 +211,9 @@ void *read_listener(void *arguments){
 
 
 			}
-
+		//Connected user is  a client
 		else{
-			//vec.clear();
+			//Resending connected client to server/s
 			if(args->pointer->otherserv.size()>0){
 				unsigned iter=0;
 				while(iter < args->pointer->otherserv.size()){
@@ -230,7 +221,9 @@ void *read_listener(void *arguments){
 					iter++;
 					}
 				}
+		//Client loop
 	  while(1){
+
 	    int count=read(args->client->clientFd,args->client->msg,100);
 
 	    if(count>0){

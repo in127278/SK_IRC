@@ -1,7 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include "server.h"
+#include "../server.h"
 
 struct adres{
   addrinfo hints{};

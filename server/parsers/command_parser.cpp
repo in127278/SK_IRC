@@ -178,7 +178,6 @@ void resend_to_others(sdata* serverData,const std::string &buf,std::vector<std::
 
 
 
-
 //TODO REMOVE IT / replace wih method
 int index_check2(server* s){
   for (int i=0;i<10;i++){

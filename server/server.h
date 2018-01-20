@@ -16,9 +16,9 @@
 #include <string.h>
 #include <pthread.h>
 #include <algorithm>
-#include "parser.cpp"
-#include "client_info.cpp"
-#include <unordered_set>
+#include "parsers/parser.cpp"
+#include "client/client_info.cpp"
+
 
 struct server {
   int servFd;
