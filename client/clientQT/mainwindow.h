@@ -30,6 +30,8 @@ void on_pushButton_3_clicked();
 
 void on_checkBox_toggled(bool checked);
 
+void on_pushButton_4_clicked();
+
 private:
     Ui::Mainwindow *ui;
 };

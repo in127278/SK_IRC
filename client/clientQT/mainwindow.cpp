@@ -10,6 +10,7 @@ Mainwindow::Mainwindow(QWidget *parent) :
     ui->lineEdit_2->hide();
     ui->pushButton->hide();
     ui->pushButton_2->hide();
+    ui->pushButton_4->hide();
     ui->spinBox->hide();
     ui->textEdit->hide();
     ui->spinBox_2->setEnabled(false);
@@ -30,11 +31,12 @@ void Mainwindow::on_pushButton_pressed()
 
 void Mainwindow::connecttoserver()
 {
-    ui->lineEdit->show();
+
     ui->lineEdit_2->show();
-    ui->pushButton->show();
+
     ui->pushButton_2->show();
-    ui->spinBox->show();
+    ui->pushButton_4->show();
+
     ui->textEdit->show();
     ui->comboBox->hide();
     ui->spinBox_2->hide();
@@ -87,12 +89,27 @@ void Mainwindow::on_pushButton_2_clicked()
 void Mainwindow::on_pushButton_3_clicked()
 {
     QString info = ui->comboBox->currentText();
+    if(ui->lineEdit_3->text().toUtf8().size() > 0 ){
 
+        tcpSocket->connectToHost(info,ui->spinBox_2->value());
 
-    tcpSocket->connectToHost(info,ui->spinBox_2->value());
+    }
 }
 
 void Mainwindow::on_checkBox_toggled(bool checked)
 {
     ui->spinBox_2->setEnabled(not(checked));
+}
+
+void Mainwindow::on_pushButton_4_clicked()
+{   if(ui->pushButton_4->isChecked() == true){
+        ui->lineEdit->show();
+        ui->spinBox->show();
+        ui->pushButton->show();
+    }
+    else{
+        ui->lineEdit->hide();
+        ui->spinBox->hide();
+        ui->pushButton->hide();
+    }
 }

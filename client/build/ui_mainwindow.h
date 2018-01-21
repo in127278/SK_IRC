@@ -45,6 +45,7 @@ public:
     QLabel *label;
     QCheckBox *checkBox;
     QComboBox *comboBox;
+    QPushButton *pushButton_4;
     QMenuBar *menuBar;
     QToolBar *mainToolBar;
     QStatusBar *statusBar;
@@ -58,25 +59,25 @@ public:
         centralWidget->setObjectName(QStringLiteral("centralWidget"));
         lineEdit = new QLineEdit(centralWidget);
         lineEdit->setObjectName(QStringLiteral("lineEdit"));
-        lineEdit->setGeometry(QRect(20, 0, 161, 31));
+        lineEdit->setGeometry(QRect(20, 0, 171, 31));
         spinBox = new QSpinBox(centralWidget);
         spinBox->setObjectName(QStringLiteral("spinBox"));
         spinBox->setGeometry(QRect(210, 0, 91, 31));
         spinBox->setMinimum(1000);
-        spinBox->setMaximum(2000);
+        spinBox->setMaximum(7000);
         spinBox->setValue(1234);
         pushButton = new QPushButton(centralWidget);
         pushButton->setObjectName(QStringLiteral("pushButton"));
-        pushButton->setGeometry(QRect(310, 0, 91, 41));
+        pushButton->setGeometry(QRect(310, 0, 81, 31));
         textEdit = new QTextEdit(centralWidget);
         textEdit->setObjectName(QStringLiteral("textEdit"));
-        textEdit->setGeometry(QRect(20, 40, 281, 131));
+        textEdit->setGeometry(QRect(20, 40, 281, 151));
         lineEdit_2 = new QLineEdit(centralWidget);
         lineEdit_2->setObjectName(QStringLiteral("lineEdit_2"));
-        lineEdit_2->setGeometry(QRect(20, 180, 281, 31));
+        lineEdit_2->setGeometry(QRect(20, 200, 281, 31));
         pushButton_2 = new QPushButton(centralWidget);
         pushButton_2->setObjectName(QStringLiteral("pushButton_2"));
-        pushButton_2->setGeometry(QRect(310, 180, 89, 25));
+        pushButton_2->setGeometry(QRect(310, 200, 81, 31));
         lineEdit_3 = new QLineEdit(centralWidget);
         lineEdit_3->setObjectName(QStringLiteral("lineEdit_3"));
         lineEdit_3->setGeometry(QRect(100, 130, 171, 31));
@@ -87,7 +88,7 @@ public:
         spinBox_2->setObjectName(QStringLiteral("spinBox_2"));
         spinBox_2->setGeometry(QRect(210, 50, 61, 31));
         spinBox_2->setMinimum(1200);
-        spinBox_2->setMaximum(1250);
+        spinBox_2->setMaximum(7000);
         spinBox_2->setValue(1234);
         label = new QLabel(centralWidget);
         label->setObjectName(QStringLiteral("label"));
@@ -104,6 +105,12 @@ public:
         comboBox->setObjectName(QStringLiteral("comboBox"));
         comboBox->setGeometry(QRect(60, 50, 141, 21));
         comboBox->setEditable(true);
+        pushButton_4 = new QPushButton(centralWidget);
+        pushButton_4->setObjectName(QStringLiteral("pushButton_4"));
+        pushButton_4->setGeometry(QRect(310, 40, 81, 151));
+        pushButton_4->setLayoutDirection(Qt::LeftToRight);
+        pushButton_4->setCheckable(true);
+        pushButton_4->setAutoDefault(false);
         Mainwindow->setCentralWidget(centralWidget);
         menuBar = new QMenuBar(Mainwindow);
         menuBar->setObjectName(QStringLiteral("menuBar"));
@@ -135,6 +142,8 @@ public:
         comboBox->setItemText(2, QApplication::translate("Mainwindow", "192.168.2.12", nullptr));
         comboBox->setItemText(3, QApplication::translate("Mainwindow", "127.0.0.1", nullptr));
 
+        pushButton_4->setText(QApplication::translate("Mainwindow", "Switch \n"
+"Server", nullptr));
     } // retranslateUi
 
 };
