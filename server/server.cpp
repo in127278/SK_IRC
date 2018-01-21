@@ -4,7 +4,7 @@ int main(int argc, char ** argv){
 	// get and validate port number
 	//if(argc != 2) error(1, 0, "Need 1 arg (port)");
 	if(argc<3){
-		error(1,0,"Usage: <ip> <port> <ip>");
+		error(1,0,"<ip> <port> <ip*> *optional");
 	}
 	char *address = argv[1];
 	auto port = readPort(argv[2]);
@@ -16,8 +16,8 @@ int main(int argc, char ** argv){
 		start_server(address,port,NULL);
 	}
 
-	// prevent dead sockets from throwing pipe errors on write
-	signal(SIGPIPE, SIG_IGN);
+	error(1,0,"this should never happen - main");
+	//signal(SIGPIPE, SIG_IGN);
   //signal(SIGINT, ctrl_c);
 /****************************/
 }
@@ -30,7 +30,7 @@ void start_server(char *address,int port,char *server_to_ping){
 	serv->servFd=socket(AF_INET, SOCK_STREAM, 0);
 	serv->port=port;
 	if(serv->servFd == -1) error(1, errno, "socket failed");
-
+	pthread_mutex_init(&serv->mut1, NULL);
 	sockaddr_in serverAddr{.sin_family=AF_INET, .sin_port=htons((short)port), .sin_addr={INADDR_ANY}};
 	inet_pton(AF_INET, address, &(serverAddr.sin_addr));
 
@@ -48,8 +48,19 @@ void start_server(char *address,int port,char *server_to_ping){
 		pthread_create(&thread2, NULL, ping_other, (void *) serv);
 
 	}
+	//signal(SIGINT, &serv->get_ctrl());
 	while(true){
-
+			char buf[100]="";
+			read(1,buf,10);
+			if(strcmp(buf,"stop") == 0){
+				pthread_mutex_lock(&serv->mut1);
+				for(int i=0;i<MAX_CLIENTS;i++){
+					close(serv->clientList[i].clientFd);
+				}
+				close(serv->servFd);
+				pthread_mutex_unlock(&serv->mut1);
+				exit(1);
+			}
 	}
 
 
@@ -126,7 +137,7 @@ void* initialize_send(void *arguments){
 		unsigned iter=0;
 		while(iter < serverData->pointer->otherserv.size()){
 			if(serverData->whatsocket != serverData->pointer->otherserv[iter]){
-				for(int i=0;i<30;i++){
+				for(int i=0;i<MAX_SERVER_CLIENTS;i++){
 					if(serverData->pointer->otherserv[iter] == serverData->pointer->other[i].clientFd){
 						add_client(serverData->whatsocket,&serverData->pointer->other[i]);
 					}
@@ -146,7 +157,8 @@ void *waiting_for_connection(void *arguments){
     	auto clientFd = accept(serv->servFd, (sockaddr*) &clientAddr, &clientAddrSize);
     	if(clientFd == -1) error(1, errno, "accept failed");
 
-			// TODO MUTEX LOCK TUTAJ
+
+			pthread_mutex_lock(&serv->mut1);
       int index = index_check(serv);
 			if (index != -1){
 				serv->clientList[index].clientFd=clientFd;
@@ -154,9 +166,7 @@ void *waiting_for_connection(void *arguments){
 				char *bufer=inet_ntoa(clientAddr.sin_addr);
 				printf("Connected from: %s\n",bufer);
 			}
-			//write(args->clientList[index].clientFd,"Connection established",sizeof("Connection established"));
-      // TODO server full
-      //TODO MUTEX UNLOCK TU
+			pthread_mutex_unlock(&serv->mut1);
       // connected:
 			pthread_t thread1;
 			sdata *data1;
@@ -174,13 +184,10 @@ void *read_listener(void *arguments){
 	std::vector<std::string> vec;
 	char buffer[100]="";
 
-	printf("ClientFd %d\n",args->client->clientFd);
-	//int count=read(args->client->clientFd,buffer,100);
 	if (read(args->client->clientFd,buffer,100) > 0){
 
 		split(buffer,vec);
-		//user=initialize_client(args,vec,count);
-		//vec.clear();
+
 
 		//Checking if connected user is a client or server
 		if(initialize_client(args,vec) ==  0){
@@ -188,7 +195,9 @@ void *read_listener(void *arguments){
 			//Remove server from the local client list TODO MUTEX
 			int fd = args->client->clientFd;
 			int index = args->client->id;
+			pthread_mutex_lock(&args->pointer->mut1);
 			args->pointer->clientList[index].reset();
+			pthread_mutex_unlock(&args->pointer->mut1);
 			printf("Other server found \n");
 			//Main loop (read) -> thread
 			sdata *serverData;
@@ -204,10 +213,11 @@ void *read_listener(void *arguments){
 
 				 //int count=read_from_server(serverData,vec);
 				 if(read_from_server(serverData,vec) == 0){
+					 pthread_mutex_lock(&serverData->pointer->mut1);
 					 serverData->pointer->otherserv.erase( std::remove( serverData->pointer->otherserv.begin(), serverData->pointer->otherserv.end(), serverData->whatsocket), serverData->pointer->otherserv.end());
 					 remove_clients_from_server(serverData,serverData->whatsocket);
 					 close(serverData->whatsocket);
-
+					 pthread_mutex_unlock(&serverData->pointer->mut1);
 					 pthread_exit((void *) -1);
 				 }
 
@@ -237,13 +247,17 @@ void *read_listener(void *arguments){
 	    }
 
 	    if(count==0){
-	        //printf("Closing: %d %d \n",args->client->id,count);
-					//TODO MUTEX
+
+					printf("Closing: %d \n",args->client->id);
+
+					remove_client(args,args->client);
+					pthread_mutex_lock(&args->pointer->mut1);
 					int index = args->client->id;
 	        close(args->pointer->clientList[index].clientFd);
+					memset(&args->pointer->clientList[index].nick[0], 0, sizeof(args->pointer->clientList[index].nick));
 					args->pointer->clientList[index].reset();
+					pthread_mutex_unlock(&args->pointer->mut1);
 
-					//TODO MUTEX
 
 	        pthread_exit((void *) -1);
 
@@ -254,21 +268,24 @@ void *read_listener(void *arguments){
 	}
 
 
-	//TODO DELETE  ClientFd
+	int index = args->client->id;
+	close(args->pointer->clientList[index].clientFd);
+	memset(&args->pointer->clientList[index].nick[0], 0, sizeof(args->pointer->clientList[index].nick));
+	args->pointer->clientList[index].reset();
 
 	pthread_exit((void *) -1);
 
 
 }
-/*
-void ctrl_c(int){
-	close(abc);
-	printf("Closing server\n");
+
+
+void server::get_ctrl(int){
+	server::closing_server();
 	exit(0);
 }
-*/
+
 int index_check(server* s){
-  for (int i=0;i<10;i++){
+  for (int i=0;i<MAX_CLIENTS;i++){
 		//printf("%d %d\n",i,s->clientList[i].clientFd);
     if(s->clientList[i].clientFd == -1){
         return i;
@@ -277,6 +294,15 @@ int index_check(server* s){
 return -1;
 }
 
+void server::closing_server(){
+	pthread_mutex_lock(&this->mut1);
+	for(int i=0;i<MAX_CLIENTS;i++){
+		close(this->clientList[i].clientFd);
+	}
+	close(this->servFd);
+	pthread_mutex_unlock(&this->mut1);
+	printf("Closing server \n");
+}
 
 
 uint16_t readPort(char * txt){

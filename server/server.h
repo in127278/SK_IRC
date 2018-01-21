@@ -16,18 +16,22 @@
 #include <string.h>
 #include <pthread.h>
 #include <algorithm>
+
 #include "parsers/parser.cpp"
 #include "client/client_info.cpp"
-
+#include "config.h"
 
 struct server {
   int servFd;
   int receivesocket;
-  client_info clientList[10];
+  client_info clientList[MAX_CLIENTS];
   std::vector <int> otherserv;
-  client_info other[30];
+  client_info other[MAX_SERVER_CLIENTS];
   char* addr;
   int port;
+  pthread_mutex_t mut1;
+  void get_ctrl(int);
+  void closing_server();
 };
 
 struct sdata {

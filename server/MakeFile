@@ -1,0 +1,9 @@
+CC = $(CXX)
+OUT_DIR = bin
+INC_DIR = -Iclient -Iparsers
+CPPFLAGS = -Wall -pthread $(INC_DIR) -std=c++11
+CPP = server.cpp client/*.cpp parsers/*.cpp
+all:	server
+Serv:		server.cpp
+		$(CC) $(CPPFLAGS) $(CPP) -o $(OUT_DIR)/s
+clean: rm s.o

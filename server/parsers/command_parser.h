@@ -14,4 +14,6 @@ void send_to_nearby(server* server_data,client_info* sender,const std::string &b
 void resend_to_others(sdata* serverData,const std::string &buf,std::vector<std::string> &vec);
 bool check_nick(sdata* serverData,std::string &buf);
 std::string generate_name(int len);
+bool is_number(const std::string& s);
+void remove_client(sdata* serverData,client_info* client);
 #endif //COMMAND_PARSER_H
