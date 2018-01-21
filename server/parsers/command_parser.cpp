@@ -1,48 +1,60 @@
 #include "command_parser.h"
 
-void parse_command(data_s* args, std::vector<std::string> &vec,int count){
+void parse_command(sdata* serverData, std::vector<std::string> &vec,int count){
   if(strcmp(vec[0].c_str(),"/nick" ) == 0){
       if(vec.size()<2){
-        write(args->client->clientFd,"Not enough arguments",sizeof("Not enough arguments"));
+        write(serverData->client->clientFd,"Not enough arguments",sizeof("Not enough arguments"));
       }
-      else if( strcmp(args->client->nick,"") == 0){
+      if(check_nick(serverData,vec[1]) == false){
+        /*
         char str[50]="";
-        strcat(str,"Welcome: ");
-        strcat(str,vec[1].c_str());
-        write(args->client->clientFd,str,sizeof(str));
-        strcpy(args->client->nick,vec[1].c_str());
+        strcat(str,"anonymous");
+        strcat(str,std::to_string(serverData->client->clientFd).c_str());
+        strcpy(serverData->client->nick,str);
+        */
+        write(serverData->client->clientFd,"Name is taken",sizeof("Name is taken"));
       }
-      else{
+      else{/*
+        if( strcmp(serverData->client->nick,"") == 0){
+          char str[50]="";
+          strcat(str,"Welcome: ");
+          strcat(str,vec[1].c_str());
+          write(serverData->client->clientFd,str,sizeof(str));
+          strcpy(serverData->client->nick,vec[1].c_str());
+        }
+        else{
+        */
         char str[100]="";
-        strcat(str,args->client->nick);
+        strcat(str,serverData->client->nick);
         strcat(str," has changed name to: ");
         strcat(str,vec[1].c_str());
-        sendtolocal(args->pointer,args->client->channel,str,sizeof(str));
-        strcpy(args->client->nick,vec[1].c_str());
+        sendtolocal(serverData->pointer,serverData->client->channel,str,sizeof(str));
+        strcpy(serverData->client->nick,vec[1].c_str());
+        //}
       }
     }
-    else if(strcmp(vec[0].c_str(),"/join" ) == 0){
-      if(vec.size()<2){
-        write(args->client->clientFd,"Not enough arguments",sizeof("Not enough arguments"));
-      }
-      else{
-        char str[100]="";
-        strcat(str,"Leaving channel: ");
-        strcat(str,std::to_string(args->client->channel).c_str());
-        strcat(str," And connecting to channel: ");
-        strcat(str,vec[1].c_str());
-        write(args->client->clientFd,str,sizeof(str));
-        args->client->channel=atoi(vec[1].c_str());
-      }
+  else if(strcmp(vec[0].c_str(),"/join" ) == 0){
+    if(vec.size()<2){
+      write(serverData->client->clientFd,"Not enough arguments",sizeof("Not enough arguments"));
     }
+    else{
+      char str[100]="";
+      strcat(str,"Leaving channel: ");
+      strcat(str,std::to_string(serverData->client->channel).c_str());
+      strcat(str," And connecting to channel: ");
+      strcat(str,vec[1].c_str());
+      write(serverData->client->clientFd,str,sizeof(str));
+      serverData->client->channel=atoi(vec[1].c_str());
+    }
+  }
   else{
     char buf[255]="";
-    strcat(buf,args->client->nick);
+    strcat(buf,serverData->client->nick);
     strcat(buf,": ");
-    strcat(buf,args->client->msg);
-    int msgcount=count+sizeof(args->client->nick)+sizeof(": ");
-    sendtolocal(args->pointer,args->client->channel,buf,msgcount);
-    send_to_nearby(args->pointer,args->client,buf,msgcount);
+    strcat(buf,serverData->client->msg);
+    int msgcount=count+sizeof(serverData->client->nick)+sizeof(": ");
+    sendtolocal(serverData->pointer,serverData->client->channel,buf,msgcount);
+    send_to_nearby(serverData->pointer,serverData->client,buf,msgcount);
   }
 
 }
@@ -77,21 +89,30 @@ void send_to_nearby(server* server_data,client_info* sender,char buf[],int msgco
   }
 }
 
-int initialize_client(data_s* args, std::vector<std::string> &vec){
+int initialize_client(sdata* serverData, std::vector<std::string> &vec){
   if(strcmp(vec[0].c_str(),"serwer") == 0){
     vec.clear();
     return 0;
   }
   else {
-    int index = args->client->id;
-    args->pointer->clientList[index].channel=0;
 
-    memset(&args->pointer->clientList[index].nick[0], 0, sizeof(&args->pointer->clientList[index].nick));
-    memset(&args->pointer->clientList[index].msg[0], 0, sizeof(&args->pointer->clientList[index].msg));
+    serverData->client->channel=0;
 
-    strcpy(args->client->nick,vec[1].c_str());
+    memset(&serverData->client->nick[0], 0, sizeof(&serverData->client->nick));
+    memset(&serverData->client->msg[0], 0, sizeof(&serverData->client->msg));
+    if(check_nick(serverData,vec[1]) == false){
+      //char str[50]="";
+      //strcat(str,"anonymous");
+      std::string name=generate_name(12);
+      strcpy(serverData->client->nick,name.c_str());
+      write(serverData->client->clientFd,"Name is taken, try again using -> /nick ",sizeof("Name is taken"));
+    }
+    else{
+          strcpy(serverData->client->nick,vec[1].c_str());
+    }
 
-    write(args->pointer->clientList[index].clientFd,"Witaj na serwerze",sizeof("Witaj na serwerze"));
+
+    write(serverData->client->clientFd,"Witaj na serwerze",sizeof("Witaj na serwerze"));
     vec.clear();
     return 1;
   }
@@ -174,8 +195,47 @@ void resend_to_others(sdata* serverData,const std::string &buf,std::vector<std::
   }
 }
 
+bool check_nick(sdata* serverData,std::string &buf){
+  for(int i=0;i<10;i++){
+    if(serverData->pointer->clientList[i].clientFd>-1){
+      if(strcmp(serverData->pointer->clientList[i].nick,buf.c_str()) == 0){
+        return false;
+
+      }
+    }
+  }
+
+  for(int i=0;i<30;i++){
+    if(serverData->pointer->other[i].clientFd>-1){
+      if(strcmp(serverData->pointer->other[i].nick,buf.c_str()) == 0){
+        return false;
+      }
+    }
+  }
+
+  return true;
+
+}
 
 
+std::string generate_name(int len)
+{
+    static auto& chrs = "0123456789"
+        "abcdefghijklmnopqrstuvwxyz"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    thread_local static std::mt19937 rg{std::random_device{}()};
+    thread_local static std::uniform_int_distribution<std::string::size_type> pick(0, sizeof(chrs) - 2);
+
+    std::string s;
+
+    s.reserve(len);
+
+    while(len--)
+        s += chrs[pick(rg)];
+
+    return s;
+}
 
 
 //TODO REMOVE IT / replace wih method

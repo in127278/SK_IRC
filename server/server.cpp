@@ -3,25 +3,23 @@
 int main(int argc, char ** argv){
 	// get and validate port number
 	//if(argc != 2) error(1, 0, "Need 1 arg (port)");
+	if(argc<3){
+		error(1,0,"Usage: <ip> <port> <ip>");
+	}
 	char *address = argv[1];
 	auto port = readPort(argv[2]);
-
 	if(argc == 4) {
 		char *server_to_ping = argv[3];
 		start_server(address,port,server_to_ping);
 	}
-	else{
+	if(argc == 3){
 		start_server(address,port,NULL);
 	}
+
 	// prevent dead sockets from throwing pipe errors on write
 	signal(SIGPIPE, SIG_IGN);
   //signal(SIGINT, ctrl_c);
 /****************************/
-
-	while(true){
-
-  }
-
 }
 
 void start_server(char *address,int port,char *server_to_ping){
@@ -48,7 +46,13 @@ void start_server(char *address,int port,char *server_to_ping){
 	if(server_to_ping!=NULL){
 		serv->addr=server_to_ping;
 		pthread_create(&thread2, NULL, ping_other, (void *) serv);
+
 	}
+	while(true){
+
+	}
+
+
 }
 
 void *ping_other(void *arguments){
@@ -155,18 +159,18 @@ void *waiting_for_connection(void *arguments){
       //TODO MUTEX UNLOCK TU
       // connected:
 			pthread_t thread1;
-			data_s *data1;
-			data1 = new data_s;
+			sdata *data1;
+			data1 = new sdata;
 			data1->pointer=serv;
 			data1->client=&serv->clientList[index];
-			//TODO starting client or server here
+
 			pthread_create(&thread1, NULL, read_listener, (void *) data1);
     }
 }
 
 void *read_listener(void *arguments){
 	//pthread_detach(pthread_self());;
-  struct data_s *args = (class data_s *)arguments;
+  struct sdata *args = (class sdata *)arguments;
 	std::vector<std::string> vec;
 	char buffer[100]="";
 

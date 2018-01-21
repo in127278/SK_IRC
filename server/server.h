@@ -33,13 +33,10 @@ struct server {
 struct sdata {
   server* pointer;
   int whatsocket;
-};
-
-
-struct data_s {
-  server* pointer;
   client_info* client;
 };
+
+
 uint16_t readPort(char * txt);
 void start_server(char *address,int port,char *pinger);
 int index_check(server*s);
