@@ -232,7 +232,7 @@ void *read_listener(void *arguments){
 
 	    if(count>0){
 					split(args->client->msg,vec);
-					parse_command(args,vec,count);
+					parse_command(args,vec,count,args->client->msg);
 					vec.clear();
 	    }
 

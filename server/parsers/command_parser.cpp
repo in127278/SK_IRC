@@ -1,36 +1,25 @@
 #include "command_parser.h"
 
-void parse_command(sdata* serverData, std::vector<std::string> &vec,int count){
+void parse_command(sdata* serverData, std::vector<std::string> &vec,int count,const std::string &msg){
   if(strcmp(vec[0].c_str(),"/nick" ) == 0){
       if(vec.size()<2){
         write(serverData->client->clientFd,"Not enough arguments",sizeof("Not enough arguments"));
       }
       if(check_nick(serverData,vec[1]) == false){
-        /*
-        char str[50]="";
-        strcat(str,"anonymous");
-        strcat(str,std::to_string(serverData->client->clientFd).c_str());
-        strcpy(serverData->client->nick,str);
-        */
+
         write(serverData->client->clientFd,"Name is taken",sizeof("Name is taken"));
+
       }
-      else{/*
-        if( strcmp(serverData->client->nick,"") == 0){
-          char str[50]="";
-          strcat(str,"Welcome: ");
-          strcat(str,vec[1].c_str());
-          write(serverData->client->clientFd,str,sizeof(str));
-          strcpy(serverData->client->nick,vec[1].c_str());
-        }
-        else{
-        */
+      else{
+
         char str[100]="";
         strcat(str,serverData->client->nick);
         strcat(str," has changed name to: ");
         strcat(str,vec[1].c_str());
         sendtolocal(serverData->pointer,serverData->client->channel,str,sizeof(str));
+        send_to_nearby(serverData->pointer,serverData->client,vec[1].c_str(),sizeof(vec[1].c_str()),vec[0]);
         strcpy(serverData->client->nick,vec[1].c_str());
-        //}
+
       }
     }
   else if(strcmp(vec[0].c_str(),"/join" ) == 0){
@@ -54,7 +43,8 @@ void parse_command(sdata* serverData, std::vector<std::string> &vec,int count){
     strcat(buf,serverData->client->msg);
     int msgcount=count+sizeof(serverData->client->nick)+sizeof(": ");
     sendtolocal(serverData->pointer,serverData->client->channel,buf,msgcount);
-    send_to_nearby(serverData->pointer,serverData->client,buf,msgcount);
+    std::string name="msg";
+    send_to_nearby(serverData->pointer,serverData->client,buf,msgcount,name);
   }
 
 }
@@ -67,22 +57,34 @@ void sendtolocal(server* server_data,int channel,const std::string &buf,int msgc
     }
   }
 }
-//TODO Replace this function with resend_to_others
-void send_to_nearby(server* server_data,client_info* sender,char buf[],int msgcount){
+
+//OBSŁUGA NICK JOIN \/
+void send_to_nearby(server* server_data,client_info* sender,const std::string &buf,int msgcount,std::string &command){
   if(server_data->otherserv.size()>0){
     unsigned iter=0;
     while(iter < server_data->otherserv.size()){
-      for(int i=0;i<30;i++){
-        if(server_data->other[i].clientFd == server_data->otherserv[iter] and server_data->other[i].channel == sender->channel){
-          char bufe[200]="";
-          strcat(bufe,"msg ");
-          strcat(bufe,std::to_string(sender->channel).c_str());
-          strcat(bufe," ");
-          strcat(bufe,buf);
-          write(server_data->otherserv[iter], bufe, sizeof(bufe));
-          printf("Sending buf to other %d from %d \n",server_data->otherserv[iter],sender->clientFd);
-          break;
+      if(strcmp(command.c_str(),"msg") == 0){
+        for(int i=0;i<30;i++){
+          if(server_data->other[i].clientFd == server_data->otherserv[iter] and server_data->other[i].channel == sender->channel){
+            char bufe[200]="";
+            strcat(bufe,"msg ");
+            strcat(bufe,std::to_string(sender->channel).c_str());
+            strcat(bufe," ");
+            strcat(bufe,buf.c_str());
+            write(server_data->otherserv[iter], bufe, sizeof(bufe));
+            printf("Sending msg to server %d from %d \n",server_data->otherserv[iter],sender->clientFd);
+            break;
+          }
         }
+      }
+      if(strcmp(command.c_str(),"/nick") == 0){
+        char bufe[200]="";
+        strcat(bufe,"/nickrequest ");
+        strcat(bufe,(sender->nick));
+        strcat(bufe," ");
+        strcat(bufe,buf.c_str());
+        write(server_data->otherserv[iter], bufe, sizeof(bufe));
+        printf("Sending nickrequest to server %d from %d \n",server_data->otherserv[iter],sender->clientFd);
       }
       iter++;
     }
@@ -109,10 +111,11 @@ int initialize_client(sdata* serverData, std::vector<std::string> &vec){
     }
     else{
           strcpy(serverData->client->nick,vec[1].c_str());
+          write(serverData->client->clientFd,"Connected to server",sizeof("Connected to server"));
     }
 
 
-    write(serverData->client->clientFd,"Witaj na serwerze",sizeof("Witaj na serwerze"));
+
     vec.clear();
     return 1;
   }
@@ -143,6 +146,22 @@ void parse_server_command(sdata* serverData, std::vector<std::string> &vec,const
     sendtolocal(serverData->pointer,channel,edited_bufer,sizeof(edited_bufer));
     resend_to_others(serverData,buf,vec);
   }
+  if(strcmp(vec[0].c_str(),"/nickrequest" ) == 0){
+    for(int i=0;i<30;i++){
+      if(strcmp(serverData->pointer->other[i].nick,vec[1].c_str()) ==0){
+        strcpy(serverData->pointer->other[i].nick,vec[2].c_str());
+        char msg[200]="";
+        strcat(msg,vec[1].c_str());
+        strcat(msg," has changed name to: ");
+        strcat(msg,serverData->pointer->other[i].nick);
+        printf("%s \n",msg);
+        sendtolocal(serverData->pointer,serverData->pointer->other[i].channel,msg,sizeof(msg));
+        break;
+      }
+    }
+    //sendtolocal(serverData->pointer,channel,edited_bufer,sizeof(edited_bufer));
+    resend_to_others(serverData,buf,vec);
+  }
 }
 
 void add_client(int fd, client_info* client){
@@ -170,7 +189,7 @@ void remove_clients_from_server(sdata* serverData,int fd){
 }
 void resend_to_others(sdata* serverData,const std::string &buf,std::vector<std::string> &vec){
   if(serverData->pointer->otherserv.size()>1){
-    if(strcmp(vec[0].c_str(),"add" ) == 0){
+    if((strcmp(vec[0].c_str(),"add" ) == 0) or (strcmp(vec[0].c_str(),"/nickrequest" ) == 0)){
       unsigned iter=0;
       while(iter < serverData->pointer->otherserv.size()){
         if(serverData->whatsocket != serverData->pointer->otherserv[iter]){
