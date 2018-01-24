@@ -30,6 +30,7 @@ struct server {
   char* addr;
   int port;
   pthread_mutex_t mut1;
+  void closing_server();
 };
 
 struct sdata {

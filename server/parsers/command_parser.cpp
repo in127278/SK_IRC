@@ -108,7 +108,7 @@ void send_to_nearby(server* server_data,client_info* sender,const std::string &b
         strcat(bufer,"/remove ");
         strcat(bufer,sender->nick);
         write(server_data->otherserv[iter], bufer, sizeof(bufer));
-        printf("Sending %s to server %d from %d \n",bufer,server_data->otherserv[iter],sender->clientFd);
+        printf("Sending removerequest %s to server %d from %d \n",bufer,server_data->otherserv[iter],sender->clientFd);
       }
       iter++;
     }
@@ -251,6 +251,7 @@ void add_client(int fd, client_info* client){
 void remove_clients_from_server(sdata* serverData,int fd){
   for(int iter=0;iter<MAX_SERVER_CLIENTS;iter++){
     if(serverData->pointer->other[iter].clientFd == fd){
+      //remove_client(serverData,&serverData->pointer->other[iter]);
       printf("Removing %s %d \n",serverData->pointer->other[iter].nick,serverData->pointer->other[iter].clientFd);
       serverData->pointer->other[iter].clientFd=-2;
       serverData->pointer->other[iter].channel=-1;
@@ -271,7 +272,7 @@ void remove_client(sdata* serverData,client_info* client){
 }
 void resend_to_others(sdata* serverData,const std::string &buf,std::vector<std::string> &vec){
   if(serverData->pointer->otherserv.size()>1){
-    if((strcmp(vec[0].c_str(),"add" ) == 0) or (strcmp(vec[0].c_str(),"/nickrequest" ) == 0) or (strcmp(vec[0].c_str(),"/joinrequest" ) == 0)){
+    if((strcmp(vec[0].c_str(),"add" ) == 0) or (strcmp(vec[0].c_str(),"/nickrequest" ) == 0) or (strcmp(vec[0].c_str(),"/joinrequest" ) == 0) or (strcmp(vec[0].c_str(),"/remove" ) == 0)){
       unsigned iter=0;
       while(iter < serverData->pointer->otherserv.size()){
         if(serverData->whatsocket != serverData->pointer->otherserv[iter]){

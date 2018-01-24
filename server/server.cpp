@@ -103,6 +103,8 @@ void *ping_other(void *arguments){
 					serv->otherserv.erase( std::remove( serv->otherserv.begin(), serv->otherserv.end(), serv->receivesocket), serv->otherserv.end());
 					remove_clients_from_server(serverData,serv->receivesocket);
 					close(serv->receivesocket);
+					printf("Closing socket from pinged server \n");
+					sleep(1);
 					prepareforping(adr,serv);
 					adr->connected=-1;
 					break;
@@ -218,6 +220,7 @@ void *read_listener(void *arguments){
 					 pthread_mutex_lock(&serverData->pointer->mut1);
 					 serverData->pointer->otherserv.erase( std::remove( serverData->pointer->otherserv.begin(), serverData->pointer->otherserv.end(), serverData->whatsocket), serverData->pointer->otherserv.end());
 					 remove_clients_from_server(serverData,serverData->whatsocket);
+					 printf("Closing client-server socket \n");
 					 close(serverData->whatsocket);
 					 pthread_mutex_unlock(&serverData->pointer->mut1);
 					 pthread_exit((void *) -1);
@@ -298,6 +301,10 @@ void server::closing_server(){
 	for(int i=0;i<MAX_CLIENTS;i++){
 		close(this->clientList[i].clientFd);
 	}
+	for(int i=0;i<MAX_SERVER_CLIENTS;i++){
+		close(this->clientList[i].clientFd);
+	}
+	
 	close(this->servFd);
 	pthread_mutex_unlock(&this->mut1);
 	printf("Closing server \n");
