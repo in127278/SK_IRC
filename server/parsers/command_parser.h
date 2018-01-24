@@ -2,6 +2,7 @@
 #define COMMAND_PARSER_H
 
 #include "utils.cpp"
+#include <random>
 
 void parse_command(sdata* arg, std::vector<std::string> &vec,int count,const std::string &msg);
 void sendtolocal(server* server_data,int channel,const std::string &buf,int msgcount);

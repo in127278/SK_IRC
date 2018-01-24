@@ -49,18 +49,20 @@ void start_server(char *address,int port,char *server_to_ping){
 
 	}
 	//signal(SIGINT, &serv->get_ctrl());
+	std::vector <std::string> vec;
 	while(true){
-			char buf[100]="";
-			read(1,buf,10);
-			if(strcmp(buf,"stop") == 0){
-				pthread_mutex_lock(&serv->mut1);
-				for(int i=0;i<MAX_CLIENTS;i++){
-					close(serv->clientList[i].clientFd);
+			char buf[100]="stop";
+			memset(&buf[0], 0,100);
+			read(1,buf,100);
+			split(buf,vec);
+			for(unsigned i=0;i<vec.size();i++){
+				//printf("%s \n",vec[i].c_str());
+				if(strcmp(vec[i].c_str(),"stop") == 0){
+						serv->closing_server();
+							exit(1);
 				}
-				close(serv->servFd);
-				pthread_mutex_unlock(&serv->mut1);
-				exit(1);
 			}
+			vec.clear();
 	}
 
 
@@ -279,10 +281,7 @@ void *read_listener(void *arguments){
 }
 
 
-void server::get_ctrl(int){
-	server::closing_server();
-	exit(0);
-}
+
 
 int index_check(server* s){
   for (int i=0;i<MAX_CLIENTS;i++){
@@ -302,6 +301,7 @@ void server::closing_server(){
 	close(this->servFd);
 	pthread_mutex_unlock(&this->mut1);
 	printf("Closing server \n");
+
 }
 
 
