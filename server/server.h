@@ -1,5 +1,6 @@
 #ifndef SERVER_H
 #define SERVER_H
+
 #include <cstdlib>
 #include <cstdio>
 #include <cstdlib>
@@ -16,40 +17,48 @@
 #include <string.h>
 #include <pthread.h>
 #include <algorithm>
+#include <vector>
 
-#include "parsers/parser.cpp"
-#include "client/client_info.cpp"
-#include "config.h"
+#include "other/client.cpp"
+#include "other/parser.cpp"
 
-struct server {
+class server {
+public:
+  server();
+  ~server();
   int servFd;
-  int receivesocket;
-  client_info clientList[MAX_CLIENTS];
-  std::vector <int> otherserv;
-  client_info other[MAX_SERVER_CLIENTS];
+  //int receivesocket;
   char* addr;
   int port;
   pthread_mutex_t mut1;
-  void closing_server();
+  client* receiveserv;
+  std::vector <client*> connected_clients;
+  std::vector <client*> imported_clients;
+  std::vector <client*> otherservvec;
+  //std::vector <int> otherserv;
+  void delete_client(client* connected);
+  void delete_imported_client(client* connected_server);
+  void delete_server(client* connected);
+  void sendtoall(std::string message);
+  std::string prepare_message(short message_type,client* client_to_send);
+  std::string prepare_client_message(short message_type,client* sender,std::string &message_to_send);
+  void init_server(char *address,int port);
+  void manage_connected(std::vector<std::string> &vec,client* connected);
+  void start_listening(char *server_to_ping);
+  bool checkifdc(client* connected,std::string &message);
+  std::string readMsg(int fd);
+  void writeMsg(std::string msg, int fd);
 };
 
 struct sdata {
-  server* pointer;
+  server* serv;
   int whatsocket;
-  client_info* client;
+  client* connected;
 };
-
-
-uint16_t readPort(char * txt);
-void start_server(char *address,int port,char *pinger);
-int index_check(server*s);
+void* exchange_clients(void *arguments);
 void *waiting_for_connection(void *arguments);
-void *read_listener(void *arguments);
-void* initialize_send(void *arguments);
-void *server_loop(void *arguments);
 void *ping_other(void *arguments);
-void setReuseAddr(int sock);
-//void ctrl_c(int);
-int read_from_server(sdata* data,std::vector<std::string> &vec);
-
+void *client_main_thread(void *arguments);
+bool check_nick(std::vector <client*> connected_clients ,std::string &buf);
+std::string generate_name(int len);
 #endif //SERVER_H

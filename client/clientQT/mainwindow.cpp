@@ -44,7 +44,7 @@ void Mainwindow::connecttoserver()
     ui->lineEdit_3->hide();
     ui->checkBox->hide();
     ui->label->hide();
-    QByteArray msg ="/nick " + ui->lineEdit_3->text().toUtf8();
+    QByteArray msg ="/nick " + ui->lineEdit_3->text().toUtf8() + '\n';
     tcpSocket->write(msg);
 }
 void Mainwindow::disconnectedfroms()
@@ -66,7 +66,11 @@ void Mainwindow::on_lineEdit_2_returnPressed()
 {
     if(tcpSocket->state() == QAbstractSocket::ConnectedState)
     {   QByteArray msg = ui->lineEdit_2->text().toUtf8();
-        tcpSocket->write(msg);
+        msg=msg+'\n';
+        if(msg.size() >1){
+
+         tcpSocket->write(msg);
+        }
         ui->lineEdit_2->clear();
     }
 
@@ -74,6 +78,7 @@ void Mainwindow::on_lineEdit_2_returnPressed()
 void Mainwindow::display(){
 
     QByteArray buffer = tcpSocket->readAll();
+    buffer.remove(buffer.size()-1,1);
     ui->textEdit->append(buffer);
 }
 
@@ -81,7 +86,11 @@ void Mainwindow::on_pushButton_2_clicked()
 {
     if(tcpSocket->state() == QAbstractSocket::ConnectedState)
     {   QByteArray msg = ui->lineEdit_2->text().toUtf8();
-        tcpSocket->write(msg);
+        msg=msg+'\n';
+        if(msg.size() >1){
+
+         tcpSocket->write(msg);
+        }
         ui->lineEdit_2->clear();
     }
 }
@@ -89,7 +98,7 @@ void Mainwindow::on_pushButton_2_clicked()
 void Mainwindow::on_pushButton_3_clicked()
 {
     QString info = ui->comboBox->currentText();
-    if(ui->lineEdit_3->text().toUtf8().size() > 0 ){
+    if(ui->lineEdit_3->text().toUtf8().size() > 1 ){
 
         tcpSocket->connectToHost(info,ui->spinBox_2->value());
 
