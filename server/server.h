@@ -18,6 +18,7 @@
 #include <pthread.h>
 #include <algorithm>
 #include <vector>
+#include <random>
 
 #include "other/client.cpp"
 #include "other/parser.cpp"
