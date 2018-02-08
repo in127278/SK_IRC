@@ -385,7 +385,7 @@ std::string server::prepare_client_message(short message_type, client* sender, s
   std::string message;
 
   if(message_type == 0){
-    message.append("/nickrequest ");
+    message.append("/nickrequest");
     message.append(" ");
     message.append(message_to_send);
     message.append(" ");

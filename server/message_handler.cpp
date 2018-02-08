@@ -156,7 +156,7 @@ void parse_server_command(sdata* thread_data, std::vector<std::string> &vec,cons
       std::string localmsg;
       localmsg.append(vec[1].c_str());
       localmsg.append(" has changed name to: ");
-      localmsg.append(nick);
+      localmsg.append(vec[2].c_str());
       localmsg.append(" ");
       sendtolocal(thread_data->serv,channel,localmsg,sizeof(localmsg));
       resend_to_others(thread_data,buf,vec);
