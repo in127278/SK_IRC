@@ -7,7 +7,7 @@ void parse_command(sdata* thread_data, std::vector<std::string> &vec,std::string
 
         thread_data->serv->writeMsg("Not enough arguments",thread_data->connected->fd);
       }
-      if(check_nick(thread_data->serv->connected_clients,vec[1]) == false){
+      if(check_nick(thread_data->serv,vec[1]) == false){
 
         thread_data->serv->writeMsg("Name is taken ",thread_data->connected->fd);
 
@@ -20,6 +20,7 @@ void parse_command(sdata* thread_data, std::vector<std::string> &vec,std::string
         strcat(localmsg," has changed name to: ");
         strcat(localmsg,vec[1].c_str());
         strcat(localmsg," ");
+        msg=thread_data->connected->nick;
         sendtolocal(thread_data->serv,thread_data->connected->channel,localmsg,sizeof(localmsg));
         strcpy(thread_data->connected->nick,vec[1].c_str());
         msgtype=0;
@@ -121,17 +122,17 @@ void parse_server_command(sdata* thread_data, std::vector<std::string> &vec,cons
       edited_bufer.append(vec[i].c_str());
       edited_bufer.append(" ");
     }
-  
+
     sendtolocal(thread_data->serv,channel,edited_bufer,sizeof(edited_bufer));
     resend_to_others(thread_data,buf,vec);
   }
   if(strcmp(vec[0].c_str(),"/nickrequest" ) == 0){
     int channel;
-    std::string prev_nick;
+    std::string nick;
     pthread_mutex_lock(&thread_data->serv->mut1);
     for(unsigned i = 0; i != thread_data->serv->imported_clients.size(); i++) {
       if(strcmp(thread_data->serv->imported_clients[i]->nick,vec[1].c_str()) == 0){
-          prev_nick=thread_data->serv->imported_clients[i]->nick;
+          nick=thread_data->serv->imported_clients[i]->nick;
           strcpy(thread_data->serv->imported_clients[i]->nick,vec[2].c_str());
           channel=thread_data->serv->imported_clients[i]->channel;
           break;
@@ -142,7 +143,7 @@ void parse_server_command(sdata* thread_data, std::vector<std::string> &vec,cons
       std::string localmsg;
       localmsg.append(vec[1].c_str());
       localmsg.append(" has changed name to: ");
-      localmsg.append(prev_nick);
+      localmsg.append(nick);
       localmsg.append(" ");
       sendtolocal(thread_data->serv,channel,localmsg,sizeof(localmsg));
       resend_to_others(thread_data,buf,vec);

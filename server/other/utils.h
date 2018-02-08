@@ -13,6 +13,7 @@ struct adres{
 
 void prepareforping(adres* adr, server* args, client* connected);
 std::string generate_name(int len);
-bool check_nick(std::vector <client*> connected_clients ,std::string &buf);
+bool check_nick(server* serv ,std::string &buf);
 bool is_number(const std::string& s);
+void setReuseAddr(int sock);
 #endif //UTILS_H

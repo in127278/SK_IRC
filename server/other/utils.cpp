@@ -12,8 +12,24 @@ void prepareforping(adres* adr, server* args,client* connected){
     }
 
 
-bool check_nick(std::vector <client*> connected_clients ,std::string &buf){
-      return true;
+bool check_nick(server* serv ,std::string &buf){
+  pthread_mutex_lock(&serv->mut1);
+  for(unsigned i = 0; i != serv->connected_clients.size(); i++) {
+    if(strcmp(serv->connected_clients[i]->nick,buf.c_str()) == 0){
+      pthread_mutex_unlock(&serv->mut1);
+      return false;
+
+    }
+  }
+  for(unsigned i = 0; i != serv->imported_clients.size(); i++) {
+    if(strcmp(serv->imported_clients[i]->nick,buf.c_str()) == 0){
+      pthread_mutex_unlock(&serv->mut1);
+      return false;
+
+    }
+  }
+  pthread_mutex_unlock(&serv->mut1);
+  return true;
   }
 
 
@@ -41,4 +57,11 @@ std::string generate_name(int len)
             s += chrs[pick(rg)];
 
         return s;
-    }
+}
+
+
+void setReuseAddr(int sock){
+	const int one = 1;
+	int res = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+	if(res) error(1,errno, "setsockopt failed");
+}

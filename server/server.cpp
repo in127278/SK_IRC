@@ -66,7 +66,7 @@ void server::writeMsg(std::string msg, int fd){
 			lengthToSend = 200 - 1;
 		}
 		strcpy(buffer, msg.substr(0, lengthToSend).c_str());
-		buffer[lengthToSend + 1] = '\n';
+		buffer[lengthToSend] = '\n';
 		int count = write(fd, buffer, lengthToSend);
 
 		if(count == -1){
@@ -81,7 +81,7 @@ void server::init_server(char *address,int port){
 	this->servFd=socket(AF_INET, SOCK_STREAM, 0);
 	this->port=port;
 	if(this->servFd == -1) error(1, errno, "socket failed");
-
+  setReuseAddr(this->servFd);
 	pthread_mutex_init(&this->mut1, NULL);
 	sockaddr_in serverAddr{.sin_family=AF_INET, .sin_port=htons((short)port), .sin_addr={INADDR_ANY}};
 	inet_pton(AF_INET, address, &(serverAddr.sin_addr));
@@ -119,6 +119,7 @@ void server::delete_imported_client(client* connected_server){
   pthread_mutex_lock(&this->mut1);
   for(unsigned i = 0; i != this->imported_clients.size(); i++) {
     if(connected_server->fd == this->imported_clients[i]->fd){
+        this->sendtoothers(this->imported_clients[i]->fd,this->prepare_message(1,this->imported_clients[i]));
         this->imported_clients.erase(this->imported_clients.begin() + i);
         i--;
     }
@@ -140,7 +141,7 @@ void server::manage_connected(std::vector<std::string> &vec, client* connected){
     connected->channel=0;
     memset(&connected->nick[0], 0, sizeof(&connected->nick));
 
-    if(check_nick(this->connected_clients,vec[1]) == false){
+    if(check_nick(this,vec[1]) == false){
 
       std::string name=generate_name(7);
       strcpy(connected->nick, name.c_str());
@@ -154,6 +155,9 @@ void server::manage_connected(std::vector<std::string> &vec, client* connected){
           this->writeMsg(message,connected->fd);
 
     }
+    pthread_mutex_lock(&this->mut1);
+    this->connected_clients.push_back(connected);
+    pthread_mutex_unlock(&this->mut1);
 
   }
 
@@ -174,9 +178,7 @@ void *waiting_for_connection(void *arguments){
       client* connected;
       connected = new client;
       connected->fd=clientFd;
-      pthread_mutex_lock(&serv->mut1);
-      serv->connected_clients.push_back(connected);
-      pthread_mutex_unlock(&serv->mut1);
+
       sdata *data1;
       data1 = new sdata;
       data1->serv=serv;
@@ -295,6 +297,7 @@ void *client_main_thread(void *arguments){
           bool check=args->serv->checkifdc(args->connected,command);
           if(check == false){
             printf("Client thread terminated \n");
+            delete(args->connected);
             pthread_exit((void *) -1);
           }
           else{
@@ -319,6 +322,7 @@ void *client_main_thread(void *arguments){
             bool check=args->serv->checkifdc(args->connected,command);
             if(check == false){
               printf("Client thread terminated \n");
+              delete(args->connected);
               pthread_exit((void *) -1);
             }
             split(command,vec);
@@ -347,6 +351,7 @@ void server::sendtoall(std::string message){
     }
   }
 
+
 std::string server::prepare_message(short message_type,client* client_to_send){
 
   std::string message;
@@ -371,6 +376,9 @@ std::string server::prepare_client_message(short message_type, client* sender, s
 
   if(message_type == 0){
     message.append("/nickrequest ");
+    message.append(" ");
+    message.append(message_to_send);
+    message.append(" ");
     message.append(sender->nick);
 
 
@@ -379,6 +387,8 @@ std::string server::prepare_client_message(short message_type, client* sender, s
   if(message_type == 1){
     message.append("/joinrequest ");
     message.append(sender->nick);
+    message.append(" ");
+    message.append(message_to_send);
   }
 
   if(message_type == 2){
@@ -386,11 +396,11 @@ std::string server::prepare_client_message(short message_type, client* sender, s
     message.append(std::to_string(sender->channel));
     message.append(" ");
     message.append(sender->nick);
-    message.append(":");
+    message.append(": ");
+    message.append(message_to_send);
 
     }
-  message.append(" ");
-  message.append(message_to_send);
+
   message.append(" \n");
 
   return message;
@@ -413,3 +423,20 @@ void* exchange_clients(void *arguments){
   }
   pthread_exit((void *) -1);
 }
+
+void server::sendtoothers(int fd,std::string message){
+  if(this->otherservvec.size()>1){
+    unsigned iter=0;
+    while(iter < this->otherservvec.size()){
+        printf("Sending /remove message to connected servers: %s %d\n",message.c_str(),this->otherservvec[iter]->fd);
+        if(fd != this->otherservvec[iter]->fd){
+          this->writeMsg(message,this->otherservvec[iter]->fd);
+          //thread_data->serv->writeMsg(buf,this->otherservvec[iter]->fd);
+        }
+
+
+
+      iter++;
+      }
+    }
+  }

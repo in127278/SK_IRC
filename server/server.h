@@ -27,7 +27,6 @@ public:
   server();
   ~server();
   int servFd;
-  //int receivesocket;
   char* addr;
   int port;
   pthread_mutex_t mut1;
@@ -35,11 +34,11 @@ public:
   std::vector <client*> connected_clients;
   std::vector <client*> imported_clients;
   std::vector <client*> otherservvec;
-  //std::vector <int> otherserv;
   void delete_client(client* connected);
   void delete_imported_client(client* connected_server);
   void delete_server(client* connected);
   void sendtoall(std::string message);
+  void sendtoothers(int fd,std::string message);
   std::string prepare_message(short message_type,client* client_to_send);
   std::string prepare_client_message(short message_type,client* sender,std::string &message_to_send);
   void init_server(char *address,int port);
