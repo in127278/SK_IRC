@@ -76,13 +76,15 @@ void parse_command(sdata* thread_data, std::vector<std::string> &vec,std::string
 
 
 
-  void sendtolocal(server* server_data,int channel,const std::string &buf,int msgcount){
-    for(unsigned i = 0; i != server_data->connected_clients.size(); i++) {
-      if(server_data->connected_clients[i]->channel == channel){
-        server_data->writeMsg(buf,server_data->connected_clients[i]->fd);
+  void sendtolocal(server* serv,int channel,const std::string &buf,int msgcount){
+    pthread_mutex_lock(&serv->mut1);
+    for(unsigned i = 0; i != serv->connected_clients.size(); i++) {
+      if(serv->connected_clients[i]->channel == channel){
+        serv->writeMsg(buf,serv->connected_clients[i]->fd);
 
       }
     }
+    pthread_mutex_unlock(&serv->mut1);
   }
 
 
@@ -100,19 +102,29 @@ void parse_server_command(sdata* thread_data, std::vector<std::string> &vec,cons
     thread_data->serv->imported_clients.push_back(connected);
     pthread_mutex_unlock(&thread_data->serv->mut1);
     printf("New client added: %s %d \n",connected->nick,connected->channel);
+    std::string localmsg;
+    localmsg.append(vec[1].c_str());
+    localmsg.append(" connected ");
+    sendtolocal(thread_data->serv,connected->channel,localmsg,sizeof(localmsg));
     resend_to_others(thread_data,buf,vec);
   }
   if(strcmp(vec[0].c_str(),"/remove" ) == 0){
     printf("Removing client: %s \n",vec[1].c_str());
+    int channel;
     pthread_mutex_lock(&thread_data->serv->mut1);
     for(unsigned i = 0; i != thread_data->serv->imported_clients.size(); i++) {
       if(strcmp(thread_data->serv->imported_clients[i]->nick,vec[1].c_str()) == 0){
+          channel=thread_data->serv->imported_clients[i]->channel;
           thread_data->serv->imported_clients.erase(thread_data->serv->imported_clients.begin() + i);
           break;
       }
     }
-    //TODO delete object
+
     pthread_mutex_unlock(&thread_data->serv->mut1);
+    std::string localmsg;
+    localmsg.append(vec[1].c_str());
+    localmsg.append(" disconnected ");
+    sendtolocal(thread_data->serv,channel,localmsg,sizeof(localmsg));
     resend_to_others(thread_data,buf,vec);
   }
   if(strcmp(vec[0].c_str(),"/msg" ) == 0){
@@ -139,6 +151,7 @@ void parse_server_command(sdata* thread_data, std::vector<std::string> &vec,cons
       }
     }
       pthread_mutex_unlock(&thread_data->serv->mut1);
+
       printf("Client updated \n");
       std::string localmsg;
       localmsg.append(vec[1].c_str());
@@ -161,6 +174,7 @@ void parse_server_command(sdata* thread_data, std::vector<std::string> &vec,cons
     }
 
     pthread_mutex_unlock(&thread_data->serv->mut1);
+
     printf("Client updated \n");
     std::string localmsg;
     localmsg.append(vec[1].c_str());
@@ -179,6 +193,7 @@ void parse_server_command(sdata* thread_data, std::vector<std::string> &vec,cons
 }
 
 void resend_to_others(sdata* thread_data,const std::string &buf,std::vector<std::string> &vec){
+  pthread_mutex_lock(&thread_data->serv->mut1);
   if(thread_data->serv->otherservvec.size()>1){
     unsigned iter=0;
     while(iter < thread_data->serv->otherservvec.size()){
@@ -189,4 +204,5 @@ void resend_to_others(sdata* thread_data,const std::string &buf,std::vector<std:
       iter++;
       }
   }
+  pthread_mutex_unlock(&thread_data->serv->mut1);
 }

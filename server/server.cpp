@@ -116,7 +116,7 @@ void server::delete_server(client* connected){
 }
 
 void server::delete_imported_client(client* connected_server){
-  pthread_mutex_lock(&this->mut1);
+ // pthread_mutex_lock(&this->mut1);
   for(unsigned i = 0; i != this->imported_clients.size(); i++) {
     if(connected_server->fd == this->imported_clients[i]->fd){
         this->sendtoothers(this->imported_clients[i]->fd,this->prepare_message(1,this->imported_clients[i]));
@@ -124,7 +124,7 @@ void server::delete_imported_client(client* connected_server){
         i--;
     }
   }
-  pthread_mutex_unlock(&this->mut1);
+  //pthread_mutex_unlock(&this->mut1);
 }
 
 
@@ -201,9 +201,7 @@ void server::start_listening(char *server_to_ping){
       pthread_create(&thread2, NULL, ping_other, (void *) this);
 
     }
-    while(1){
 
-    }
   }
 
 
@@ -227,7 +225,7 @@ void *ping_other(void *arguments){
 	while(1){
 		adr->connected=connect(connected->fd, adr->resolved->ai_addr, adr->resolved->ai_addrlen);
 
-		sleep(1);
+		sleep(2);
 
 		if(adr->connected == 0){
 			printf("Connected to 'pinged' server %d\n",connected->fd);
@@ -256,9 +254,10 @@ void *ping_other(void *arguments){
         if(check == false){
           printf("Closing socket from pinged server \n");
 					sleep(1);
-					prepareforping(adr,serv,connected);
+          close(connected->fd);
           connected->fd=-1;
-					adr->connected=-1;
+          prepareforping(adr,serv,connected);
+          adr->connected=-1;
           command.clear();
           vec.clear();
 					break; //return to "connect" routine
@@ -317,10 +316,19 @@ void *client_main_thread(void *arguments){
       //resend client to otherserv
       args->serv->sendtoall(args->serv->prepare_message(0,args->connected));
 
+      std::string localmsg;
+      localmsg.append(args->connected->nick);
+      localmsg.append(" connected ");
+      sendtolocal(args->serv,args->connected->channel,localmsg,sizeof(localmsg));
         while(1){
             std::string command;
             bool check=args->serv->checkifdc(args->connected,command);
             if(check == false){
+              std::string localmsg;
+              localmsg.append(args->connected->nick);
+              localmsg.append(" disconnected ");
+              sendtolocal(args->serv,args->connected->channel,localmsg,sizeof(localmsg));
+
               printf("Client thread terminated \n");
               delete(args->connected);
               pthread_exit((void *) -1);
@@ -335,19 +343,21 @@ void *client_main_thread(void *arguments){
     }
 
   }
-pthread_exit((void *) -1);
+
+  error(1,0,"this should never happen - client_main_thread");
+//pthread_exit((void *) -1);
 }
 
 void server::sendtoall(std::string message){
   if(this->otherservvec.size()>0){
     unsigned iter=0;
+    pthread_mutex_lock(&this->mut1);
     while(iter < this->otherservvec.size()){
         printf("Sending this message to connected servers: %s %d\n",message.c_str(),this->otherservvec[iter]->fd);
         this->writeMsg(message,this->otherservvec[iter]->fd);
-
-
       iter++;
       }
+    pthread_mutex_unlock(&this->mut1);
     }
   }
 
@@ -408,6 +418,7 @@ std::string server::prepare_client_message(short message_type, client* sender, s
 
 void* exchange_clients(void *arguments){
 	struct sdata *thread_data = (struct sdata *)arguments;
+  pthread_mutex_lock(&thread_data->serv->mut1);
   for(unsigned i = 0; i != thread_data->serv->connected_clients.size(); i++) {
     thread_data->serv->writeMsg(thread_data->serv->prepare_message(0,thread_data->serv->connected_clients[i]),thread_data->connected->fd);
     printf("Sending client %s to connected server \n",thread_data->serv->connected_clients[i]->nick);
@@ -421,10 +432,12 @@ void* exchange_clients(void *arguments){
       }
     }
   }
+  pthread_mutex_unlock(&thread_data->serv->mut1);
   pthread_exit((void *) -1);
 }
 
 void server::sendtoothers(int fd,std::string message){
+  pthread_mutex_lock(&this->mut1);
   if(this->otherservvec.size()>1){
     unsigned iter=0;
     while(iter < this->otherservvec.size()){
@@ -439,4 +452,5 @@ void server::sendtoothers(int fd,std::string message){
       iter++;
       }
     }
+    pthread_mutex_unlock(&this->mut1);
   }
